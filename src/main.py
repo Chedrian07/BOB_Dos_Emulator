@@ -56,7 +56,7 @@ def main():
     cthread.start()
 
     print("===== My DOS x86 Emulator (macOS-safe) Started =====")
-    print("Commands (in console): g=go, n=next, s=stop, r=regs, q=quit")
+    print("Commands (in console): g=go, n=next, s=stop, r=regs, d=disassemble, q=quit")
 
     running = True
     stopped = False  # s=stop -> CPU 실행 중단
@@ -75,6 +75,9 @@ def main():
                 stopped = True
             elif cmd == "r":
                 dbg.print_cpu_state()
+            elif cmd == "d":
+                # 새로 추가: 디스어셈블 10줄
+                dbg.disassemble_next_10()
             elif cmd == "q":
                 running = False
             else:
