@@ -3,9 +3,8 @@
 class Memory:
     """
     간단한 물리 메모리(Physical Memory) 구현.
-    i80386은 32비트 주소로 최대 4GB까지 접근할 수 있으므로
-    여기서는 예시로 16MB(0x1000000) 정도만 할당해 둔다.
-    필요에 따라 확장 가능.
+    i80386은 32비트 주소로 최대 4GB까지 접근 가능하지만,
+    여기서는 예시로 16MB(0x1000000)만 할당.
     """
 
     def __init__(self, size_in_bytes=0x1000000):
@@ -18,13 +17,11 @@ class Memory:
         return self.mem[addr]
 
     def read16(self, addr: int) -> int:
-        # 리틀 엔디안
         low = self.read8(addr)
         high = self.read8(addr+1)
         return (high << 8) | low
 
     def read32(self, addr: int) -> int:
-        # 리틀 엔디안
         b0 = self.read8(addr)
         b1 = self.read8(addr+1)
         b2 = self.read8(addr+2)
@@ -37,7 +34,6 @@ class Memory:
         self.mem[addr] = value & 0xFF
 
     def write16(self, addr: int, value: int):
-        # 리틀 엔디안
         self.write8(addr, value & 0xFF)
         self.write8(addr+1, (value >> 8) & 0xFF)
 
