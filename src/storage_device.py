@@ -1,6 +1,10 @@
-# storage_device.py
-
 import os
+
+FLAG_CF = 0x00000001  # Carry flag bit
+FLAG_ZF = 0x00000040  # Zero flag bit
+FLAG_SF = 0x00000080  # Sign flag bit
+FLAG_OF = 0x00000800  # Overflow flag bit
+
 
 class IDEHardDisk:
     """
@@ -18,18 +22,20 @@ class IDEHardDisk:
         self.total_sectors = self.cylinders * self.heads * self.sectors_per_track
         expected_size = self.total_sectors * self.bytes_per_sector
 
+        # disk.img가 존재하지 않을 때만 생성하도록 수정
         if not os.path.exists(self.disk_image_path):
-            # 생성
             with open(self.disk_image_path, "wb") as f:
-                # 최소한 expected_size 만큼 0으로
                 f.seek(expected_size - 1)
                 f.write(b'\x00')
 
-                # 간단한 부트섹터 코드(512바이트)
-                boot_code = bytearray([ 
-                    0xB8, 0x12, 0x34,  # MOV AX,0x3412
-                    0x05, 0x01, 0x00,  # ADD AX,0x0001
-                    0xEA, 0x06, 0x7C, 0x00, 0x00,  # JMP 0x0000:0x7C06
+                boot_code = bytearray([
+                    0xB8, 0x13, 0x00,  # MOV AX, 0x0013
+                    0xCD, 0x10,        # INT 0x10
+                    0xB8, 0x0C, 0x07,  # AH=0Ch, AL=07h
+                    0xB9, 0x40, 0x00,  # CX=100
+                    0xBA, 0x40, 0x00,  # DX=100
+                    0xCD, 0x10,        # INT 0x10
+                    0xEB, 0xFE         # JMP $
                 ])
                 boot_code += b'\x00'*(512-len(boot_code))
                 f.seek(0)
@@ -53,18 +59,18 @@ class IDEHardDisk:
         head = self.drive_head_reg & 0x0F
         cylinder = (self.cylinder_high_reg << 8) | self.cylinder_low_reg
         sector = self.sector_number_reg
-        lba = (cylinder * self.heads + head)*self.sectors_per_track + (sector - 1)
+        lba = (cylinder * self.heads + head) * self.sectors_per_track + (sector - 1)
         return lba
 
     def read_sector(self, lba):
         with open(self.disk_image_path, "rb") as f:
-            f.seek(lba*self.bytes_per_sector)
+            f.seek(lba * self.bytes_per_sector)
             return f.read(self.bytes_per_sector)
 
     def write_sector(self, lba, data):
         assert len(data) == self.bytes_per_sector
         with open(self.disk_image_path, "r+b") as f:
-            f.seek(lba*self.bytes_per_sector)
+            f.seek(lba * self.bytes_per_sector)
             f.write(data)
 
     def execute_command(self):
@@ -121,8 +127,7 @@ class IDEHardDisk:
                     self.write_sector(lba, self.data_buffer)
                     self.status_reg = 0x40
         elif port == 0x1F1:
-            # Features
-            pass
+            pass  # Features
         elif port == 0x1F2:
             self.sector_count_reg = value
         elif port == 0x1F3:
